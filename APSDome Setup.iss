@@ -38,7 +38,6 @@ Source: "C:\Sviluppo\APSDomeControl\ASCOM.APS.Dome\bin\Release\ASCOM.APSDome.exe
 ; TODO: Add driver assemblies into the ServedClasses folder
 ; Require a read-me HTML to appear after installation, maybe driver's Help doc
 Source: "C:\Sviluppo\APSDomeControl\ASCOM.APS.Dome\ReadMe.htm"; DestDir: "{app}"; Flags: isreadme
-Source: "C:\Sviluppo\APSDomeControl\ASCOM.APS.Dome\bin\Release\Newtonsoft.Json.dll"; DestDir: "{app}"
 
 
 ; Only if driver is .NET

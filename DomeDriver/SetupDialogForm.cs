@@ -70,6 +70,7 @@ namespace ASCOM.APS.Dome
                 else
                 {
                     DomeHardware.ipAddress = txtIP.Text;
+                    DomeHardware.apiKey = txtApiKey.Text;
                     tl.LogMessage("Setup OK", $"New configuration values - IP address: {DomeHardware.ipAddress}");
                     closeForm = true;
                 }
@@ -114,6 +115,8 @@ namespace ASCOM.APS.Dome
             }
 
             txtIP.Text = DomeHardware.ipAddress;
+            txtApiKey.Text = DomeHardware.apiKey;
+            tabCtrl1.SelectedIndex = DomeHardware.connectionMode;
 
             tl.LogMessage("InitUI", $"Set UI controls to Trace: {chkTrace.Checked}, COM Port: {comboBoxComPort.SelectedItem}, IP Address: {txtIP.Text}");
         }

@@ -41,9 +41,11 @@ namespace ASCOM.APS.Dome
             this.tabCtrl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.label3 = new System.Windows.Forms.Label();
-            this.txtIP = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
+            this.txtIP = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.label5 = new System.Windows.Forms.Label();
+            this.txtApiKey = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.picASCOM)).BeginInit();
             this.tabCtrl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
@@ -159,6 +161,8 @@ namespace ASCOM.APS.Dome
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.txtApiKey);
+            this.tabPage2.Controls.Add(this.label5);
             this.tabPage2.Controls.Add(this.label4);
             this.tabPage2.Controls.Add(this.txtIP);
             this.tabPage2.Location = new System.Drawing.Point(4, 22);
@@ -169,6 +173,21 @@ namespace ASCOM.APS.Dome
             this.tabPage2.Text = "Rete";
             this.tabPage2.UseVisualStyleBackColor = true;
             // 
+            // label4
+            // 
+            this.label4.Location = new System.Drawing.Point(6, 13);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(104, 13);
+            this.label4.TabIndex = 1;
+            this.label4.Text = "Inserire l\'indirizzo IP";
+            // 
+            // txtIP
+            // 
+            this.txtIP.Location = new System.Drawing.Point(116, 10);
+            this.txtIP.Name = "txtIP";
+            this.txtIP.Size = new System.Drawing.Size(133, 20);
+            this.txtIP.TabIndex = 0;
+            // 
             // label3
             // 
             this.label3.Location = new System.Drawing.Point(13, 9);
@@ -177,20 +196,20 @@ namespace ASCOM.APS.Dome
             this.label3.TabIndex = 10;
             this.label3.Text = "Scegliere la modalità di collegamento con APS Dome Control";
             // 
-            // txtIP
+            // label5
             // 
-            this.txtIP.Location = new System.Drawing.Point(21, 35);
-            this.txtIP.Name = "txtIP";
-            this.txtIP.Size = new System.Drawing.Size(183, 20);
-            this.txtIP.TabIndex = 0;
+            this.label5.Location = new System.Drawing.Point(6, 48);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(100, 13);
+            this.label5.TabIndex = 2;
+            this.label5.Text = "Inserire l\'API Key";
             // 
-            // label4
+            // txtApiKey
             // 
-            this.label4.Location = new System.Drawing.Point(7, 5);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(245, 23);
-            this.label4.TabIndex = 1;
-            this.label4.Text = "Inserire l\'indirizzo IP";
+            this.txtApiKey.Location = new System.Drawing.Point(116, 41);
+            this.txtApiKey.Name = "txtApiKey";
+            this.txtApiKey.Size = new System.Drawing.Size(133, 20);
+            this.txtApiKey.TabIndex = 3;
             // 
             // SetupDialogForm
             // 
@@ -239,5 +258,7 @@ namespace ASCOM.APS.Dome
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.TextBox txtIP;
         private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.TextBox txtApiKey;
+        private System.Windows.Forms.Label label5;
     }
 }

@@ -13,6 +13,7 @@ using ASCOM.Utilities;
 using System;
 using System.Collections;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -29,6 +30,8 @@ namespace ASCOM.APS.Dome
         internal const string comPortDefault = "COM1";
         internal const string ipAddressProfileName = "IP Address";
         internal const string ipAddressDefault = "192.168.1.100";
+        internal const string apiKeyProfileName = "API Key";
+        internal const string apiKeyDefault = "";
         internal const string connectionModeProfileName = "Connection Mode";
         internal const int connectionModeDefault = 0;
         internal const string traceStateProfileName = "Trace Level";
@@ -38,6 +41,7 @@ namespace ASCOM.APS.Dome
         private static string DriverDescription = "ASCOM APS Dome Driver"; // The value is set by the driver's class initialiser.
         internal static string comPort; // COM port name (if required)
         internal static string ipAddress; // IP Address of the device
+        internal static string apiKey;
         internal static int connectionMode; // Connection mode [Serial = 0 / Network = 1]
         private static bool connectedState; // Local server's connected state
         private static bool runOnce = false; // Flag to enable "one-off" activities only to run once.
@@ -232,32 +236,33 @@ namespace ASCOM.APS.Dome
                 //serial.WriteLine(command);
 
                 response = serial.ReceiveTerminated(OP_CMD__END);
-                response = SerialCommandResponseParse(response, command);
+                response = SerialCommandResponseParse(response);
                 //string response = serial.ReadLine();
                 mutex.ReleaseMutex();
             }
             else
             {
-                string uri_s = ipAddress;
+                string uri_s = ipAddress + "/xhr?cmd=" + command + "&apikey=" + apiKey;
 
-                if (!uri_s.StartsWith("http://"))
-                {
-                    uri_s = "http://" + uri_s + "/gshs";
-                }
+                if (!uri_s.StartsWith("http://")) { uri_s = "http://" + uri_s; }
+                StringContent content = new StringContent("{}", Encoding.UTF8, "application/json");
 
-                using (HttpRequestMessage request = new HttpRequestMessage { Method = HttpMethod.Post, RequestUri = new Uri(uri_s) })
+                using (HttpRequestMessage request = new HttpRequestMessage { Method = HttpMethod.Post, RequestUri = new Uri(uri_s), Content = content })
                 {
-                    using (HttpResponseMessage http_resp = client.SendAsync(request).Result)
+                    using (HttpResponseMessage http_rm = client.SendAsync(request).Result)
                     {
-                        if (http_resp.StatusCode == System.Net.HttpStatusCode.OK)
+                        if (http_rm.StatusCode == System.Net.HttpStatusCode.OK)
                         {
-                            //if (command == OP_CMD__GETSHUTTERSTATUS)
-                            //{
-                            //    HttpContent content = http_resp.Content;
-                            //    string js = content.ReadAsStringAsync().Result;
-                            //    JObject jo = JObject.Parse(js);
-                            //    response = (string)jo["data"]["shs"];
-                            //}
+                            if (command == OP_CMD__GETSHUTTERSTATUS)
+                            {
+                                HttpContent http_c = http_rm.Content;
+                                string js = http_c.ReadAsStringAsync().Result;
+                                var p = js.IndexOf("shs\":");
+                                response = js.Substring(p + 5, 1);
+
+                                //Newtonsoft.Json.Linq.JObject jo = Newtonsoft.Json.Linq.JObject.Parse(js);
+                                //response = (string)jo["oj"]["shs"];
+                            }
                         }
                     }
                 }
@@ -419,14 +424,13 @@ namespace ASCOM.APS.Dome
             try
             {
                 string res = CommandString(OP_CMD__ABORTSLEW, false);
+                shutterState = ShutterState.shutterError;
                 LogMessage("AbortSlew", "aborting slew");
             }
             catch (Exception ex)
             {
                 LogMessage("AbortSlew", "Error abort slew: " + ex.Message);
             }
-
-            shutterState = ShutterState.shutterError;
         }
 
         /// <summary>
@@ -782,6 +786,7 @@ namespace ASCOM.APS.Dome
                 tl.Enabled = Convert.ToBoolean(driverProfile.GetValue(DriverProgId, traceStateProfileName, string.Empty, traceStateDefault));
                 comPort = driverProfile.GetValue(DriverProgId, comPortProfileName, string.Empty, comPortDefault);
                 ipAddress = driverProfile.GetValue(DriverProgId, ipAddressProfileName, string.Empty, ipAddressDefault);
+                apiKey = driverProfile.GetValue(DriverProgId, apiKeyProfileName, string.Empty, apiKeyDefault);
                 connectionMode = Convert.ToInt32(driverProfile.GetValue(DriverProgId, connectionModeProfileName, string.Empty, connectionModeDefault.ToString()));
             }
         }
@@ -797,6 +802,7 @@ namespace ASCOM.APS.Dome
                 driverProfile.WriteValue(DriverProgId, traceStateProfileName, tl.Enabled.ToString());
                 driverProfile.WriteValue(DriverProgId, comPortProfileName, comPort);
                 driverProfile.WriteValue(DriverProgId, ipAddressProfileName, ipAddress);
+                driverProfile.WriteValue(DriverProgId, apiKeyProfileName, apiKey);
                 driverProfile.WriteValue(DriverProgId, connectionModeProfileName, connectionMode.ToString());
             }
         }
@@ -898,16 +904,14 @@ namespace ASCOM.APS.Dome
                 try
                 {
                     client = new HttpClient();
-                    string uri_s = ipAddress;
+                    string uri_s = ipAddress + "/xhr?cmd=" + OP_CMD__GETSHUTTERSTATUS + "&apikey=" + apiKey;
 
-                    if (!uri_s.StartsWith("http://"))
-                    {
-                        uri_s = "http://" + uri_s + "/gshs";
-                    }
-
+                    if (!uri_s.StartsWith("http://")) { uri_s = "http://" + uri_s; }
                     if (!Uri.TryCreate(uri_s, UriKind.Absolute, out Uri uri)) { throw new Exception("Inserire un indirizzo IP valido"); }
 
-                    using (HttpRequestMessage request = new HttpRequestMessage { Method = HttpMethod.Get, RequestUri = uri })
+                    StringContent content = new StringContent("{}", Encoding.UTF8, "application/json");
+
+                    using (HttpRequestMessage request = new HttpRequestMessage { Method = HttpMethod.Post, RequestUri = uri, Content = content })
                     {
                         using (HttpResponseMessage response = client.SendAsync(request).Result)
                         {
@@ -944,10 +948,10 @@ namespace ASCOM.APS.Dome
 
         internal static void StartThread()
         {
+            GetShutterState();
+
             thread = new Thread(MainThread) { IsBackground = true };
             thread.Start();
-
-            GetShutterState();
         }
 
         internal static void AbortThread()
@@ -966,20 +970,23 @@ namespace ASCOM.APS.Dome
             try
             {
                 string res = CommandString(OP_CMD__GETSHUTTERSTATUS, false);
-                int i = Convert.ToInt32(res);
-                shutterState = (ShutterState)i;
+                res = SerialCommandResponseParse(res);
+                if (res.Substring(0, 1) == OP_CMD__GETSHUTTERSTATUS.ToString())
+                {
+                    int i = Convert.ToInt32(res.Substring(4));
+                    shutterState = (ShutterState)i;
+                }
             }
             catch (Exception ex)
             {
-                LogMessage("GetInitialShutterState", "Error: " + ex.Message);
+                LogMessage("GetShutterState", "Error: " + ex.Message);
                 shutterState = ShutterState.shutterError;
             }
         }
 
-        private static string SerialCommandResponseParse(string response, string command)
+        private static string SerialCommandResponseParse(string response)
         {
-            string p = response.Replace(OP_CMD__START, "").Replace(OP_CMD__END, "");
-            return p.Substring(4);
+            return response.Replace(OP_CMD__START, "").Replace(OP_CMD__END, "");
         }
 
         private static void MainThread()
@@ -996,20 +1003,23 @@ namespace ASCOM.APS.Dome
                     {
                         string res = serial.ReceiveTerminated(OP_CMD__END); // CommandString("S", false);
                                                                             //string s = serial.ReadLine();
-                        res = SerialCommandResponseParse(res, OP_CMD__GETSHUTTERSTATUS);
-                        int i = Convert.ToInt32(res);
+                        res = SerialCommandResponseParse(res);
+                        if (res.Substring(0, 1) == OP_CMD__GETSHUTTERSTATUS.ToString())
+                        {
+                            int i = Convert.ToInt32(res.Substring(4));
 
-                        //if (Enum.GetValues(typeof(ShutterState)).Cast<int>().Any(value => value == i))
-                        //{
-                        shutterState = (ShutterState)i;
-                        //}
+                            //if (Enum.GetValues(typeof(ShutterState)).Cast<int>().Any(value => value == i))
+                            //{
+                            shutterState = (ShutterState)i;
+                            //}
+                        }
                     }
                     catch
                     {
                         //LogMessage("Shutter", "Exception: " + ex.Message);
                     }
 
-                    Thread.Sleep(500);
+                    Thread.Sleep(100);
                 }
                 else
                 {

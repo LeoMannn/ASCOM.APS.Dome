@@ -5,15 +5,15 @@
 [Setup]
 AppID={{c675d0bf-415e-46ff-90d3-f2183c257df9}
 AppName=ASCOM APSDome Driver
-AppVerName=ASCOM APSDome Driver 0.1.0
-AppVersion=0.1.0
+AppVerName=ASCOM APSDome Driver 0.6.0
+AppVersion=0.6.0
 AppPublisher=Astro Photo Station Software <apssoft@aps.com>
 AppPublisherURL=mailto:apssoft@aps.com
 AppSupportURL=https://ascomtalk.groups.io/g/Help
 AppUpdatesURL=https://ascom-standards.org/
 VersionInfoVersion=1.0.0
 MinVersion=6.1.7601
-DefaultDirName="{commoncf}\ASCOM\Dome"
+DefaultDirName="{commoncf}\ASCOM\Dome\APS Dome Driver"
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 OutputDir="Output"
@@ -38,7 +38,7 @@ Source: "C:\Sviluppo\APSDomeControl\ASCOM.APS.Dome\bin\Release\ASCOM.APSDome.exe
 ; TODO: Add driver assemblies into the ServedClasses folder
 ; Require a read-me HTML to appear after installation, maybe driver's Help doc
 Source: "C:\Sviluppo\APSDomeControl\ASCOM.APS.Dome\ReadMe.htm"; DestDir: "{app}"; Flags: isreadme
-; TODO: Add other files needed by your driver here (add subfolders above)
+Source: "C:\Sviluppo\APSDomeControl\ASCOM.APS.Dome\bin\Release\Newtonsoft.Json.dll"; DestDir: "{app}"
 
 
 ; Only if driver is .NET

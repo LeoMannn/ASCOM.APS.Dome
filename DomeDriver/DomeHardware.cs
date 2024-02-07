@@ -247,22 +247,16 @@ namespace ASCOM.APS.Dome
                 if (!uri_s.StartsWith("http://")) { uri_s = "http://" + uri_s; }
                 StringContent content = new StringContent("{}", Encoding.UTF8, "application/json");
 
-                using (HttpRequestMessage request = new HttpRequestMessage { Method = HttpMethod.Post, RequestUri = new Uri(uri_s), Content = content })
+                using (HttpRequestMessage http_request = new HttpRequestMessage { Method = HttpMethod.Post, RequestUri = new Uri(uri_s), Content = content })
                 {
-                    using (HttpResponseMessage http_rm = client.SendAsync(request).Result)
+                    using (HttpResponseMessage http_response = client.SendAsync(http_request).Result)
                     {
-                        if (http_rm.StatusCode == System.Net.HttpStatusCode.OK)
+                        if (command == OP_CMD__GETSHUTTERSTATUS && (http_response.StatusCode == System.Net.HttpStatusCode.OK || http_response.StatusCode == System.Net.HttpStatusCode.Forbidden))
                         {
-                            if (command == OP_CMD__GETSHUTTERSTATUS)
-                            {
-                                HttpContent http_c = http_rm.Content;
-                                string js = http_c.ReadAsStringAsync().Result;
-                                var p = js.IndexOf("shs\":");
-                                response = js.Substring(p + 5, 1);
-
-                                //Newtonsoft.Json.Linq.JObject jo = Newtonsoft.Json.Linq.JObject.Parse(js);
-                                //response = (string)jo["oj"]["shs"];
-                            }
+                            HttpContent http_c = http_response.Content;
+                            string js = http_c.ReadAsStringAsync().Result;
+                            var p = js.IndexOf("shs\":");
+                            response = js.Substring(p + 5, 1);
                         }
                     }
                 }
@@ -1007,19 +1001,12 @@ namespace ASCOM.APS.Dome
                         if (res.Substring(0, 1) == OP_CMD__GETSHUTTERSTATUS.ToString())
                         {
                             int i = Convert.ToInt32(res.Substring(4));
-
-                            //if (Enum.GetValues(typeof(ShutterState)).Cast<int>().Any(value => value == i))
-                            //{
                             shutterState = (ShutterState)i;
-                            //}
                         }
                     }
-                    catch
-                    {
-                        //LogMessage("Shutter", "Exception: " + ex.Message);
-                    }
+                    catch { }
 
-                    Thread.Sleep(100);
+                    Thread.Sleep(500);
                 }
                 else
                 {

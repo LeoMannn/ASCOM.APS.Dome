@@ -54,6 +54,7 @@ namespace ASCOM.APS.Dome
         private static Thread thread;
         private static Mutex mutex;
         private static HttpClient client;
+        private const int OP_STATUS__OK = 0;
         private const string OP_CMD__START = "|";
         private const string OP_CMD__END = "#";
         private const string OP_CMD__OPENSHUTTER = "O";         // Apertura del tetto
@@ -235,9 +236,7 @@ namespace ASCOM.APS.Dome
                 //serial.DiscardOutBuffer();
                 //serial.WriteLine(command);
 
-                response = serial.ReceiveTerminated(OP_CMD__END);
-                response = SerialCommandResponseParse(response);
-                //string response = serial.ReadLine();
+                response = serial.ReceiveTerminated(OP_CMD__END);   //string response = serial.ReadLine();
                 mutex.ReleaseMutex();
             }
             else
@@ -256,7 +255,8 @@ namespace ASCOM.APS.Dome
                             HttpContent http_c = http_response.Content;
                             string js = http_c.ReadAsStringAsync().Result;
                             var p = js.IndexOf("shs\":");
-                            response = js.Substring(p + 5, 1);
+                            // imposta la risposta nel formato "CMD000STATO" perchè possa essere 
+                            response = command + OP_STATUS__OK.ToString("D3") + js.Substring(p + 5, 1);
                         }
                     }
                 }

@@ -15,6 +15,7 @@ using System.Collections;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ASCOM.APS.Dome
@@ -25,6 +26,12 @@ namespace ASCOM.APS.Dome
     [HardwareClass()] // Class attribute flag this as a device hardware class that needs to be disposed by the local server when it exits.
     internal static class DomeHardware
     {
+        internal enum ConnectionMode
+        {
+            Serial,
+            Network
+        }
+
         // Constants used for Profile persistence
         internal const string comPortProfileName = "COM Port";
         internal const string comPortDefault = "COM1";
@@ -33,7 +40,7 @@ namespace ASCOM.APS.Dome
         internal const string apiKeyProfileName = "API Key";
         internal const string apiKeyDefault = "";
         internal const string connectionModeProfileName = "Connection Mode";
-        internal const int connectionModeDefault = 0;
+        internal const ConnectionMode connectionModeDefault = ConnectionMode.Serial;
         internal const string traceStateProfileName = "Trace Level";
         internal const string traceStateDefault = "true";
 
@@ -42,7 +49,7 @@ namespace ASCOM.APS.Dome
         internal static string comPort; // COM port name (if required)
         internal static string ipAddress; // IP Address of the device
         internal static string apiKey;
-        internal static int connectionMode; // Connection mode [Serial = 0 / Network = 1]
+        internal static ConnectionMode connectionMode; // Connection mode [Serial = 0 / Network = 1]
         private static bool connectedState; // Local server's connected state
         private static bool runOnce = false; // Flag to enable "one-off" activities only to run once.
         internal static Util utilities; // ASCOM Utilities object for use as required
@@ -51,9 +58,10 @@ namespace ASCOM.APS.Dome
 
         //private static SerialPort serial;
         private static ASCOM.Utilities.Serial serial;
-        private static Thread thread;
         private static Mutex mutex;
         private static HttpClient client;
+        private static CancellationTokenSource _cancellationTokenSource;
+
         private const int OP_STATUS__OK = 0;
         private const string OP_CMD__START = "|";
         private const string OP_CMD__END = "#";
@@ -227,7 +235,7 @@ namespace ASCOM.APS.Dome
 
             string response = "";
 
-            if (connectionMode == 0)
+            if (connectionMode == ConnectionMode.Serial)
             {
                 _ = mutex.WaitOne();
 
@@ -328,7 +336,7 @@ namespace ASCOM.APS.Dome
                 if (value == IsConnected)
                     return;
 
-                if (connectionMode == 0)
+                if (connectionMode == ConnectionMode.Serial)
                     Connected_Serial(value);
                 else
                     Connected_Network(value);
@@ -781,7 +789,7 @@ namespace ASCOM.APS.Dome
                 comPort = driverProfile.GetValue(DriverProgId, comPortProfileName, string.Empty, comPortDefault);
                 ipAddress = driverProfile.GetValue(DriverProgId, ipAddressProfileName, string.Empty, ipAddressDefault);
                 apiKey = driverProfile.GetValue(DriverProgId, apiKeyProfileName, string.Empty, apiKeyDefault);
-                connectionMode = Convert.ToInt32(driverProfile.GetValue(DriverProgId, connectionModeProfileName, string.Empty, connectionModeDefault.ToString()));
+                connectionMode = (ConnectionMode)Enum.Parse(typeof(ConnectionMode), driverProfile.GetValue(DriverProgId, connectionModeProfileName, string.Empty, connectionModeDefault.ToString()));
             }
         }
 
@@ -944,19 +952,16 @@ namespace ASCOM.APS.Dome
         {
             GetShutterState();
 
-            thread = new Thread(MainThread) { IsBackground = true };
-            thread.Start();
+            _cancellationTokenSource = new CancellationTokenSource();
+            var token = _cancellationTokenSource.Token;
+
+            // Start the asynchronous background task
+            _ = MainThreadAsync(token);
         }
 
         internal static void AbortThread()
         {
-            if (thread != null)
-            {
-                thread.Abort();
-                thread.Join();
-                thread = null;
-                while (thread != null) { Thread.Sleep(100); }
-            }
+            _cancellationTokenSource.Cancel();
         }
 
         internal static void GetShutterState()
@@ -983,36 +988,41 @@ namespace ASCOM.APS.Dome
             return response.Replace(OP_CMD__START, "").Replace(OP_CMD__END, "");
         }
 
-        private static void MainThread()
+        internal static async Task MainThreadAsync(CancellationToken cancellationToken)
         {
-            //bool isRunning = true;
-            //Stopwatch stopwatch = Stopwatch.StartNew();
-            //int timeoutMilliseconds = 60000;
-
-            while (IsConnected) //(isRunning && stopwatch.ElapsedMilliseconds < timeoutMilliseconds)
+            // while loop that checks if the connection is active and monitors cancellation
+            while (IsConnected && !cancellationToken.IsCancellationRequested)
             {
-                if (connectionMode == 0)
+                if (connectionMode == ConnectionMode.Serial)
                 {
                     try
                     {
-                        string res = serial.ReceiveTerminated(OP_CMD__END); // CommandString("S", false);
-                                                                            //string s = serial.ReadLine();
+                        // Send and receive command over the serial port
+                        string res = serial.ReceiveTerminated(OP_CMD__END);
                         res = SerialCommandResponseParse(res);
-                        if (res.Substring(0, 1) == OP_CMD__GETSHUTTERSTATUS.ToString())
+
+                        // Process response and update shutter state
+                        if (res.StartsWith(OP_CMD__GETSHUTTERSTATUS.ToString()))
                         {
                             int i = Convert.ToInt32(res.Substring(4));
                             shutterState = (ShutterState)i;
                         }
                     }
-                    catch { }
+                    catch
+                    {
+                        // Handle or log any exceptions if needed
+                    }
 
-                    Thread.Sleep(500);
+                    // Wait for 500ms without blocking the thread
+                    await Task.Delay(500, cancellationToken);
                 }
                 else
                 {
+                    // Perform the network or alternative connection mode check
                     GetShutterState();
 
-                    Thread.Sleep(2000);
+                    // Wait for 2000ms without blocking the thread
+                    await Task.Delay(2000, cancellationToken);
                 }
             }
         }

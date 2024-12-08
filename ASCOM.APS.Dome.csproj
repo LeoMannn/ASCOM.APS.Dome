@@ -27,9 +27,10 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationRevision>1</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
+    <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -59,6 +60,18 @@
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>LocalServer.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManifestCertificateThumbprint>150247D60F4CAAF302A4D7FE253C18A92550581A</ManifestCertificateThumbprint>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ManifestKeyFile>ASCOM.APS.Dome_TemporaryKey.pfx</ManifestKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifests>true</GenerateManifests>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignManifests>true</SignManifests>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ASCOM.Astrometry, Version=6.0.0.0, Culture=neutral, PublicKeyToken=565de7938946fba7, processorArchitecture=MSIL" />
@@ -108,14 +121,14 @@
   <ItemGroup>
     <Content Include=".gitattributes" />
     <Content Include=".gitignore" />
-    <Content Include="APSDome Setup.iss" />
-    <Content Include="APSDome Test.js" />
     <Content Include="ASCOM.ico" />
     <Content Include="ASCOM.png" />
     <Content Include="ReadMe.htm" />
+    <Content Include="Setup.iss" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="ASCOM.APS.Dome_TemporaryKey.pfx" />
     <None Include="LocalServer.snk" />
   </ItemGroup>
   <ItemGroup>
@@ -146,6 +159,10 @@
   <PropertyGroup>
     <PreBuildEvent>
     </PreBuildEvent>
-    <PostBuildEvent>if $(ConfigurationName) == Release "C:\Program Files (x86)\Inno Setup 6\iscc" "$(ProjectDir)\APSDome Setup.iss"</PostBuildEvent>
+    <PostBuildEvent>if $(ConfigurationName) == Release (
+powershell -Command "&amp; {[System.Reflection.AssemblyName]::GetAssemblyName('$(TargetPath)').Version.ToString() | ForEach-Object { '#define MyAppVersion \"' + $_ + '\"' } |Out-File -Encoding utf8 '$(ProjectDir)AppVersion.iss'}"
+
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "$(ProjectDir)Setup.iss"
+)</PostBuildEvent>
   </PropertyGroup>
 </Project>

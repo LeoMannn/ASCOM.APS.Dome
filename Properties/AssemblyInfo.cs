@@ -7,12 +7,12 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 //
 // TODO - Add your authorship information here
-[assembly: AssemblyTitle("ASCOM.APS.Dome")]
+[assembly: AssemblyTitle("APS ASCOM Dome Driver")]
 [assembly: AssemblyDescription("ASCOM Local Server Dome driver for APS")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("The ASCOM Initiative")]
+[assembly: AssemblyCompany("APS Software")]
 [assembly: AssemblyProduct("ASCOM Local Server Dome driver for APS")]
-[assembly: AssemblyCopyright("Copyright © 2023 The ASCOM Initiative")]
+[assembly: AssemblyCopyright("Copyright © APS Software")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -30,5 +30,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
 
-[assembly: AssemblyVersion("6.6.2.0")]
-[assembly: AssemblyFileVersion("6.6.2.0")]
+[assembly: AssemblyVersion("0.3.0.0")]
+[assembly: AssemblyFileVersion("0.3.0.0")]

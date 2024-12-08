@@ -1,6 +1,7 @@
 using ASCOM.Utilities;
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -27,10 +28,9 @@ namespace ASCOM.APS.Dome
         private void CmdOK_Click(object sender, EventArgs e) // OK button event handler
         {
             tl.Enabled = chkTrace.Checked;
+            DomeHardware.connectionMode = (DomeHardware.ConnectionMode)Enum.Parse(typeof(DomeHardware.ConnectionMode), tabCtrl1.SelectedIndex.ToString());
 
-            DomeHardware.connectionMode = tabCtrl1.SelectedIndex;
-
-            if (DomeHardware.connectionMode == 0)
+            if (DomeHardware.connectionMode == DomeHardware.ConnectionMode.Serial)
             {
                 if (comboBoxComPort.Items.Count == 0)
                 {
@@ -61,7 +61,10 @@ namespace ASCOM.APS.Dome
                     uri_s = "http://" + uri_s;
                 }
 
-                if (!Uri.TryCreate(uri_s, UriKind.Absolute, out _))
+                string[] ipValue = uri_s.ToString().Replace("http://", "").Split('.');
+                bool ipAddrOk = ipValue.Length == 4 && ipValue.All(r => byte.TryParse(r, out byte _)) && !ipValue.All(r => Convert.ToByte(r) == 0) && (!ipValue.All(r => Convert.ToByte(r) == 255));
+
+                if (!Uri.TryCreate(uri_s, UriKind.Absolute, out _) || !ipAddrOk)
                 {
                     _ = MessageBox.Show("Inserire un indirizzo IP valido", "Attenzione", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     tl.LogMessage("Setup OK", $"New configuration values - IP address: not valid");
@@ -116,7 +119,7 @@ namespace ASCOM.APS.Dome
 
             txtIP.Text = DomeHardware.ipAddress;
             txtApiKey.Text = DomeHardware.apiKey;
-            tabCtrl1.SelectedIndex = DomeHardware.connectionMode;
+            tabCtrl1.SelectedIndex = (int)DomeHardware.connectionMode;
 
             tl.LogMessage("InitUI", $"Set UI controls to Trace: {chkTrace.Checked}, COM Port: {comboBoxComPort.SelectedItem}, IP Address: {txtIP.Text}");
         }
@@ -153,7 +156,7 @@ namespace ASCOM.APS.Dome
             {
                 comboBoxComPort.Items.AddRange(serial.AvailableCOMPorts);
             }
-            comboBoxComPort.SelectedIndex = 0;
+            if (comboBoxComPort.Items.Count > 0) comboBoxComPort.SelectedIndex = 0;
         }
     }
 }

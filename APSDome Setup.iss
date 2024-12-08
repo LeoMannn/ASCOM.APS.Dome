@@ -5,7 +5,7 @@
 [Setup]
 AppID={{c675d0bf-415e-46ff-90d3-f2183c257df9}
 AppName=ASCOM APSDome Driver
-AppVerName=ASCOM APSDome Driver 0.6.0
+AppVerName=ASCOM APSDome Driver 6.6.2.0
 AppVersion=0.6.0
 AppPublisher=Astro Photo Station Software <apssoft@aps.com>
 AppPublisherURL=mailto:apssoft@aps.com
